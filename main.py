@@ -43,10 +43,7 @@ async def create_budget(budget: Budget, db: Session = Depends(get_db)):
     db.add(budget_model)
     db.commit()
 
-    return {
-        'status': 201,
-        'transaction': 'Successful'
-    }
+    return successful_response(201)
 
 @app.put("/{budget_id}")
 async def update_budget(budget_id: int, budget: Budget, db: Session = Depends(get_db)):
@@ -62,10 +59,25 @@ async def update_budget(budget_id: int, budget: Budget, db: Session = Depends(ge
     db.add(budget_model)
     db.commit()
 
-    return {
-        'status': 200,
-        'transaction': 'Successful'
-    }
+    return successful_response(200)
+
+@app.delete("/{budget_id}")
+async def delete_budget(budget_id: int, db: Session = Depends(get_db)):
+    budget_model = db.query(models.Budgets).filter(models.Budgets.id == budget_id).first()
+
+    if budget_model is None:
+        raise http_expection()
+    
+    db.query(models.Budgets).filter(models.Budgets.id == budget_id).delete()
+    db.commit()
+
+    return successful_response(200) 
 
 def http_expection():
     return HTTPException(status_code=404, detail="Budget not found")
+
+def successful_response(status_code: int):
+    return {
+        'status': status_code,
+        'transaction': 'Successful'
+    }
