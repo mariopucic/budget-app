@@ -4,6 +4,7 @@ from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional
+from auth import get_user_exception, get_current_user
 
 app = FastAPI()
 
@@ -25,6 +26,13 @@ class Budget(BaseModel):
 @app.get("/")
 async def read_all(db: Session = Depends(get_db)):
     return db.query(models.Budgets).all()
+
+@app.get("/budgets/user")
+async def read_all_by_users(user: dict = Depends(get_current_user),
+                            db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+    return db.query(models.Budgets).filter(models.Budgets.owner_id == user.get("id")).all()
 
 @app.get("/budget/{budget_id}")
 async def read_budget(budget_id: int, db: Session = Depends(get_db)):
