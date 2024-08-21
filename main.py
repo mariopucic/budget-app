@@ -35,18 +35,30 @@ async def read_all_by_users(user: dict = Depends(get_current_user),
     return db.query(models.Budgets).filter(models.Budgets.owner_id == user.get("id")).all()
 
 @app.get("/budget/{budget_id}")
-async def read_budget(budget_id: int, db: Session = Depends(get_db)):
-    budget_model = db.query(models.Budgets).filter(models.Budgets.id == budget_id).first()
+async def read_budget(budget_id: int,
+                      user:dict = Depends(get_current_user), 
+                      db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+    budget_model = db.query(models.Budgets)\
+        .filter(models.Budgets.id == budget_id)\
+        .filter(models.Budgets.owner_id == user.get("id"))\
+        .first()
     if budget_model is not None:
         return budget_model
     raise http_expection()
 
 @app.post("/")
-async def create_budget(budget: Budget, db: Session = Depends(get_db)):
+async def create_budget(budget: Budget,
+                        user: dict = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
     budget_model = models.Budgets()
     budget_model.name = budget.name
     budget_model.description = budget.description
     budget_model.amount = budget.amount
+    budget_model.owner_id = user.get("id")
 
     db.add(budget_model)
     db.commit()
@@ -54,8 +66,17 @@ async def create_budget(budget: Budget, db: Session = Depends(get_db)):
     return successful_response(201)
 
 @app.put("/{budget_id}")
-async def update_budget(budget_id: int, budget: Budget, db: Session = Depends(get_db)):
-    budget_model = db.query(models.Budgets).filter(models.Budgets.id == budget_id).first()
+async def update_budget(budget_id: int,
+                        budget: Budget,
+                        user: dict = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+    
+    budget_model = db.query(models.Budgets)\
+        .filter(models.Budgets.id == budget_id)\
+        .filter(models.Budgets.owner_id == user.get("id"))\
+        .first()
     
     if budget_model is None:
         raise http_expection()
@@ -70,8 +91,16 @@ async def update_budget(budget_id: int, budget: Budget, db: Session = Depends(ge
     return successful_response(200)
 
 @app.delete("/{budget_id}")
-async def delete_budget(budget_id: int, db: Session = Depends(get_db)):
-    budget_model = db.query(models.Budgets).filter(models.Budgets.id == budget_id).first()
+async def delete_budget(budget_id: int,
+                        user: dict = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+    
+    budget_model = db.query(models.Budgets)\
+        .filter(models.Budgets.id == budget_id)\
+        .filter(models.Budgets.owner_id == user.get("id"))\
+        .first()
 
     if budget_model is None:
         raise http_expection()
