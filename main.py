@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from auth import get_user_exception, get_current_user
 
+
 app = FastAPI()
 
 models.Base.metadata.create_all(bind=engine)
@@ -21,6 +22,7 @@ class Budget(BaseModel):
     name: str
     description: Optional[str]
     amount: int = Field(gt=0)
+    category: Optional[str]
 
 
 @app.get("/")
@@ -58,6 +60,7 @@ async def create_budget(budget: Budget,
     budget_model.name = budget.name
     budget_model.description = budget.description
     budget_model.amount = budget.amount
+    budget_model.category = budget.category
     budget_model.owner_id = user.get("id")
 
     db.add(budget_model)
@@ -84,6 +87,7 @@ async def update_budget(budget_id: int,
     budget_model.name = budget.name
     budget_model.description = budget.description
     budget_model.amount = budget.amount
+    budget_model.category = budget.category
 
     db.add(budget_model)
     db.commit()
