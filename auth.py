@@ -86,7 +86,7 @@ async def create_new_user(create_user: CreateUser, db: Session = Depends(get_db)
     db.add(create_user_model)
     db.commit()
 
-@app.post("/token")
+@app.post("/login")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = autheticate_user(form_data.username, form_data.password, db)
     if not user:

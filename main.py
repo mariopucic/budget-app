@@ -24,8 +24,14 @@ class Budget(BaseModel):
     amount: int = Field(gt=0)
     category: Optional[str]
 
+class BudgetUpdate(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+    amount: Optional[int] = Field(gt=0)
+    category: Optional[str]
 
-@app.get("/")
+
+@app.get("/budget")
 async def read_all(db: Session = Depends(get_db)):
     return db.query(models.Budgets).all()
 
@@ -36,7 +42,7 @@ async def read_all_by_users(user: dict = Depends(get_current_user),
         raise get_user_exception()
     return db.query(models.Budgets).filter(models.Budgets.owner_id == user.get("id")).all()
 
-@app.get("/budget/{budget_id}")
+@app.get("/budget/read/{budget_id}")
 async def read_budget(budget_id: int,
                       user:dict = Depends(get_current_user), 
                       db: Session = Depends(get_db)):
@@ -50,7 +56,17 @@ async def read_budget(budget_id: int,
         return budget_model
     raise http_expection()
 
-@app.post("/")
+@app.get("/budget/search")
+async def search_budget(keyword: str, db: Session = Depends(get_db)):
+    results = db.query(models.Budgets).filter(
+        (models.Budgets.name.ilike(f"%{keyword}%")) |
+        (models.Budgets.description.ilike(f"%{keyword}%")) |
+        (models.Budgets.category.ilike(f"%{keyword}%"))
+    ).all()
+
+    return results
+
+@app.post("/budget/create")
 async def create_budget(budget: Budget,
                         user: dict = Depends(get_current_user),
                         db: Session = Depends(get_db)):
@@ -68,9 +84,9 @@ async def create_budget(budget: Budget,
 
     return successful_response(201)
 
-@app.put("/{budget_id}")
+@app.put("/budget/update/{budget_id}")
 async def update_budget(budget_id: int,
-                        budget: Budget,
+                        budget: BudgetUpdate,
                         user: dict = Depends(get_current_user),
                         db: Session = Depends(get_db)):
     if user is None:
@@ -84,17 +100,21 @@ async def update_budget(budget_id: int,
     if budget_model is None:
         raise http_expection()
     
-    budget_model.name = budget.name
-    budget_model.description = budget.description
-    budget_model.amount = budget.amount
-    budget_model.category = budget.category
+    if budget.name is not None and budget.name != "string":
+        budget_model.name = budget.name 
+    if budget.description is not None and budget.description != "string":
+        budget_model.description = budget.description
+    if budget.amount is not None and budget.amount != 1:
+        budget_model.amount = budget.amount 
+    if budget.category is not None and budget.category != "string":
+        budget_model.category = budget.category
 
     db.add(budget_model)
     db.commit()
 
     return successful_response(200)
 
-@app.delete("/{budget_id}")
+@app.delete("/budget/delete/{budget_id}")
 async def delete_budget(budget_id: int,
                         user: dict = Depends(get_current_user),
                         db: Session = Depends(get_db)):
